@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="theme-color" content="#1c1c2e">
+<title>Prince's Quest — Interview Prep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-sky:#5c94fc; --bg-sky2:#3878d4; --ground:#5c3a1e; --ground2:#7a5230;
+  --brick:#c84c0c; --coin:#fcd800; --pipe:#00a800; --pipe2:#00c800;
+  --panel:#1c1c2e; --panel2:#2a2a44; --white:#fff; --ink:#1a1a1a;
+  --star:#ffe45c; --heart:#ff5d7a; --lock:#5a5a6e;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0; font-family:'Press Start 2P',monospace; color:var(--white);
+  background:linear-gradient(180deg,var(--bg-sky) 0%,var(--bg-sky2) 55%, var(--ground) 55%, var(--ground2) 100%);
+  background-attachment:fixed;
+  padding:20px 10px 60px; image-rendering:pixelated; font-size:11px; line-height:1.6;
+  min-height:100vh;
+}
+.clouds{
+  position:fixed; top:0; left:0; width:100%; height:220px; pointer-events:none; z-index:0;
+  background-image:
+    radial-gradient(ellipse 40px 18px at 10% 20%, #fff 90%, transparent),
+    radial-gradient(ellipse 30px 14px at 30% 10%, #fff 90%, transparent),
+    radial-gradient(ellipse 50px 20px at 70% 25%, #fff 90%, transparent),
+    radial-gradient(ellipse 35px 16px at 90% 12%, #fff 90%, transparent);
+  opacity:.9;
+}
+.wrap{max-width:900px; margin:0 auto; position:relative; z-index:1;}
+
+.hud{
+  background:var(--panel); border:4px solid var(--white); box-shadow:0 0 0 4px var(--ink);
+  padding:14px 18px; margin-bottom:20px; display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between;
+}
+.hud h1{font-size:14px; margin:0 0 6px; color:var(--coin); text-shadow:2px 2px 0 var(--ink);}
+.hud .sub{font-size:8px; color:#bcbce0;}
+.hud-stats{display:flex; gap:14px; flex-wrap:wrap;}
+.hud-stat{text-align:center;}
+.hud-stat .n{font-size:16px; color:var(--star);}
+.hud-stat .l{font-size:7px; color:#bcbce0; margin-top:4px;}
+
+.overall-bar-outer{
+  height:20px; background:var(--ink); border:3px solid var(--white); margin-top:10px; position:relative; overflow:hidden;
+}
+.overall-bar-inner{
+  height:100%; background:repeating-linear-gradient(90deg,var(--coin) 0 8px, #ffb700 8px 16px);
+  width:0%; transition:width .5s steps(12);
+}
+.prince-marker{
+  position:absolute; top:-22px; font-size:16px; transition:left .5s steps(12); transform:translateX(-50%);
+}
+
+.world-path{
+  display:flex; gap:0; overflow-x:auto; padding:24px 10px 34px; margin-bottom:20px;
+  background:var(--panel); border:4px solid var(--white); box-shadow:0 0 0 4px var(--ink);
+}
+.level-node{
+  flex:0 0 auto; width:86px; text-align:center; position:relative; cursor:pointer; padding-top:6px;
+}
+.level-node:not(:last-child)::after{
+  content:''; position:absolute; top:38px; left:70px; width:40px; height:4px; background:var(--white);
+}
+.node-icon{
+  width:44px; height:44px; margin:0 auto 6px; background:var(--brick); border:3px solid var(--ink);
+  display:flex; align-items:center; justify-content:center; font-size:18px; position:relative;
+}
+.node-icon.locked{background:var(--lock); opacity:.6;}
+.node-icon.current{background:var(--coin); animation:bounce 1s infinite;}
+.node-icon.complete{background:var(--pipe);}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+.node-label{font-size:7px; color:var(--white);}
+.node-current-flag{position:absolute; top:-20px; left:50%; transform:translateX(-50%); font-size:14px;}
+
+.controls{display:flex; gap:8px; margin:16px 0; flex-wrap:wrap; align-items:center;}
+.controls input[type="text"]{
+  font-family:inherit; background:var(--panel2); border:3px solid var(--white); color:var(--white);
+  padding:8px; font-size:9px; width:170px;
+}
+button{
+  font-family:inherit; background:var(--panel2); color:var(--white); border:3px solid var(--white);
+  padding:8px 10px; font-size:8px; cursor:pointer; box-shadow:3px 3px 0 var(--ink);
+}
+button:active{ box-shadow:0 0 0 var(--ink); transform:translate(3px,3px); }
+button.primary{background:var(--brick);}
+
+.segment-title{
+  font-size:11px; margin:26px 0 12px; padding:8px 12px; background:var(--brick);
+  border:3px solid var(--ink); box-shadow:3px 3px 0 var(--ink); display:inline-block;
+}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:12px;}
+.card{
+  background:var(--panel2); border:3px solid var(--white); padding:12px; box-shadow:3px 3px 0 var(--ink);
+}
+.card.done{border-color:var(--pipe2); background:#1f3a22;}
+.card.progress{border-color:var(--coin); background:#3a3418;}
+.card-top{display:flex; align-items:flex-start; gap:10px;}
+.checkbox{
+  width:28px; height:28px; border:3px solid var(--white); cursor:pointer; flex-shrink:0;
+  background:var(--ink); display:flex; align-items:center; justify-content:center; font-size:13px;
+}
+.checkbox.checked{background:var(--pipe2);}
+.checkbox.checked::after{content:"★";}
+.topic-name{font-size:9px; flex:1; line-height:1.6;}
+.topic-name.done{text-decoration:line-through; color:#8a8aa8;}
+
+.status-select{
+  margin-top:10px; width:100%; font-family:inherit; background:var(--ink); color:var(--white);
+  border:2px solid var(--white); padding:6px; font-size:8px; cursor:pointer;
+}
+
+.links-toggle{
+  margin-top:10px; font-size:8px; cursor:pointer; user-select:none; color:var(--coin);
+  display:flex; align-items:center; gap:4px;
+}
+.links-toggle .arrow{transition:.15s;}
+.links-toggle.open .arrow{transform:rotate(90deg);}
+.links-box{display:none; margin-top:8px;}
+.links-box.open{display:block;}
+.link-input{
+  width:100%; font-family:inherit; background:var(--ink); color:var(--white); border:2px solid var(--white);
+  padding:6px; font-size:8px; margin-bottom:6px;
+}
+.link-list{max-height:100px; overflow-y:auto; display:flex; flex-direction:column; gap:4px;}
+.link-list::-webkit-scrollbar{width:8px;}
+.link-list::-webkit-scrollbar-thumb{background:var(--white);}
+.link-empty{font-size:8px; color:#8a8aa8; padding:2px;}
+.link-item{
+  background:var(--panel); border:1px solid var(--white); padding:5px 6px; font-size:8px;
+  display:flex; justify-content:space-between; align-items:center; gap:6px;
+}
+.link-item a{color:var(--coin); text-decoration:underline; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.link-item button{background:none; border:none; color:var(--white); cursor:pointer; font-size:10px; flex-shrink:0; box-shadow:none; padding:0;}
+
+.gen-links-section{
+  margin-top:26px; background:var(--panel2); border:3px solid var(--white); box-shadow:3px 3px 0 var(--ink); padding:16px;
+}
+.gen-links-section h2{margin-top:0; font-size:11px; color:var(--coin);}
+.gen-links-section p{font-size:8px; color:#bcbce0;}
+.gen-links-section textarea{
+  width:100%; min-height:80px; font-family:inherit; background:var(--ink); color:var(--white);
+  border:2px solid var(--white); padding:8px; font-size:9px; resize:vertical;
+}
+.gen-links-list{margin-top:10px; display:flex; flex-direction:column; gap:6px; max-height:160px; overflow-y:auto;}
+.gen-link-item{
+  background:var(--panel); border:1px solid var(--white); padding:6px 8px; font-size:8px;
+  display:flex; justify-content:space-between; align-items:center; gap:8px; word-break:break-all;
+}
+.gen-link-item a{color:var(--coin); text-decoration:underline;}
+.gen-link-item button{background:none; border:none; color:var(--white); cursor:pointer; font-size:11px; flex-shrink:0; box-shadow:none;}
+.seed-links{margin-top:14px; font-size:8px;}
+.seed-links summary{cursor:pointer; color:var(--coin);}
+.seed-links a{color:var(--white); display:block; margin-top:6px; font-size:8px; word-break:break-all;}
+
+.overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,.75); display:none; align-items:center; justify-content:center;
+  z-index:100; padding:20px;
+}
+.overlay.show{display:flex;}
+.levelup-modal{
+  background:var(--panel); border:5px solid var(--coin); box-shadow:0 0 0 5px var(--ink), 0 0 40px rgba(252,216,0,.5);
+  max-width:420px; width:100%; padding:28px 24px; text-align:center; animation:pop .35s ease;
+}
+@keyframes pop{0%{transform:scale(.7); opacity:0;}100%{transform:scale(1); opacity:1;}}
+.levelup-modal .stars{font-size:22px; color:var(--star); margin-bottom:10px; letter-spacing:6px;}
+.levelup-modal h2{font-size:16px; color:var(--coin); margin:0 0 14px; text-shadow:2px 2px 0 var(--ink);}
+.levelup-modal .msg{font-size:9px; line-height:1.9; margin-bottom:16px; color:#eaeaff;}
+.levelup-modal .treat-box{
+  background:var(--panel2); border:3px dashed var(--star); padding:12px; margin-bottom:18px; font-size:8px; color:var(--star);
+}
+.levelup-modal .treat-box .tt{color:var(--white); display:block; margin-bottom:6px; font-size:7px; letter-spacing:1px;}
+.levelup-modal button{margin-top:4px;}
+
+#toast{
+  position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:var(--ink); border:3px solid var(--coin); color:var(--white);
+  padding:10px 16px; font-size:8px; opacity:0; transition:.3s; pointer-events:none; z-index:200;
+}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+@media (max-width:600px){
+  body{font-size:10px; padding:14px 8px 50px;}
+  .hud{padding:12px; gap:10px;}
+  .hud h1{font-size:12px;}
+  .hud-stats{gap:10px; width:100%; justify-content:space-between;}
+  .grid{grid-template-columns:1fr;}
+  .world-path{padding:20px 8px 28px;}
+  .level-node{width:70px;}
+  .node-icon{width:38px; height:38px; font-size:15px;}
+  .node-label{font-size:6px;}
+  .controls{gap:6px;}
+  .controls input[type="text"]{width:100%; flex:1 1 100%;}
+  button{padding:9px 10px; font-size:8px; flex:1 1 auto;}
+  .levelup-modal{padding:22px 16px;}
+  .levelup-modal h2{font-size:12px;}
+}
+
+</style>
+</head>
+<body>
+<div class="clouds"></div>
+<div class="wrap">
+  <div class="hud">
+    <div>
+      <h1>★ Prince's Quest: .NET Kingdom ★</h1>
+      <div class="sub">Guide the prince through every level to reclaim the throne</div>
+    </div>
+    <div class="hud-stats">
+      <div class="hud-stat"><div class="n" id="statDone">0</div><div class="l">CLEARED</div></div>
+      <div class="hud-stat"><div class="n" id="statProgress">0</div><div class="l">IN BATTLE</div></div>
+      <div class="hud-stat"><div class="n" id="statTodo">0</div><div class="l">LOCKED</div></div>
+    </div>
+    <div style="flex-basis:100%;">
+      <div class="overall-bar-outer">
+        <div class="overall-bar-inner" id="progressBar"></div>
+        <div class="prince-marker" id="princeMarker" style="left:0%;">🤴</div>
+      </div>
+      <div style="font-size:8px; margin-top:8px; color:#bcbce0;" id="progressLabel">0 / 0 quests complete</div>
+    </div>
+  </div>
+
+  <div class="world-path" id="worldPath"></div>
+
+  <div class="controls">
+    <input type="text" id="searchBox" placeholder="Find topic...">
+    <button id="filterAll">All</button>
+    <button id="filterTodo">Locked</button>
+    <button id="filterProgress">In battle</button>
+    <button id="filterDone">Cleared</button>
+    <button id="resetBtn">Reset quest</button>
+    <button id="exportBtn">Save file</button>
+    <button id="importBtn">Load file</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none">
+  </div>
+
+  <div id="segmentsContainer"></div>
+
+  <div class="gen-links-section">
+    <h2>📜 Scrolls of knowledge (general links)</h2>
+    <p>Paste one or more links used for overall study, space or newline separated.</p>
+    <textarea id="genLinksInput" placeholder="Paste links here..."></textarea>
+    <div class="controls" style="justify-content:flex-start; margin:8px 0 0;">
+      <button class="primary" id="addGenLinks">Add links</button>
+    </div>
+    <div class="gen-links-list" id="genLinksList"></div>
+    <details class="seed-links">
+      <summary>Reference repos</summary>
+      <a href="https://github.com/neizsche/Dotnet-Interview-Preperation/tree/main/previous-interview" target="_blank">github.com/neizsche/Dotnet-Interview-Preperation</a>
+      <a href="https://github.com/NikhilManu/Interview-Preparation/blob/main/Siemens/Round%202/06%20-%20Unit%20Testing.md" target="_blank">github.com/NikhilManu/Interview-Preparation (Siemens Round 2)</a>
+    </details>
+  </div>
+</div>
+
+<div class="overlay" id="levelUpOverlay">
+  <div class="levelup-modal">
+    <div class="stars">★ ★ ★</div>
+    <h2 id="levelUpTitle">LEVEL CLEARED!</h2>
+    <div class="msg" id="levelUpMsg"></div>
+    <div class="treat-box">
+      <span class="tt">🎁 TREAT YOURSELF</span>
+      <span id="levelUpTreat"></span>
+    </div>
+    <button class="primary" id="levelUpClose">Continue quest ▶</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const RAW_TOPICS = {
+  "Segment 1": [
+    "OOPs concepts","Polymorphism","Inheritance","Interface","Abstract classes","Virtual functions",
+    "Sealed class","== vs Equals","Access specifiers","ref and out","Struct and class",
+    "Reference type and value type","Constant and readonly","string and string builder",
+    "Exception handling","Garbage collection","CLR","Reflection","Generics","Indexer",
+    "Serialisation","Managed and Unmanaged","Extension methods","Memory leak","Dispose",
+    "Events and delegates",
+    "Multithreading","Deadlock","Tasks","LINQ","Design patterns","SOLID Principles","Command",
+    "WPF","Layout Panels","Binding","Update source trigger, binding mode","Control templates",
+    "User control, custom control","Routed events","Dependency properties","Attached properties",
+    "Styles and triggers","Data templates","Virtualisation","Layout transform, render transform",
+    "Invoke and begin invoke","static and dynamic resource","Converters","MVVM","Partial class"
+  ],
+  "Segment 2": [
+    "SOLID with examples mainly Liskov and interface segregation",
+    "Design patterns with examples mainly singleton and observer (factory method optional)",
+    "Extension method","Static, virtual, override","Async await output examples and concepts",
+    "Print odd() and even() sequentially using threads","What is TPL","How are threads managed by TPL",
+    "Dependency injection","How multiple implementations are registered and used for an interface",
+    "What happens when a child class object is created from a parent method",
+    "Encapsulation vs abstraction","Why depend on interface instead of concrete implementations?",
+    "Garbage collection, L1, L2, L3","IDisposable vs destructor","Use of dependency injection",
+    "Thread vs TPL","Await vs .Result()","Abstract class vs interface",
+    "Why are exceptions needed, can't we use error codes","Finalize keyword",
+    "Move zeros to right","Find the second largest element","Reverse all words in a string array"
+  ]
+};
+
+const LEVEL_SIZE = 5;
+const LEVELS = [];
+Object.entries(RAW_TOPICS).forEach(([segName, topics])=>{
+  let levelNum = 1;
+  for(let i=0;i<topics.length;i+=LEVEL_SIZE){
+    LEVELS.push({
+      id: (segName+'-lvl'+levelNum).toLowerCase().replace(/[^a-z0-9]+/g,'-'),
+      segName, levelNum,
+      topics: topics.slice(i, i+LEVEL_SIZE)
+    });
+    levelNum++;
+  }
+});
+
+const APPRECIATIONS = [
+  "The prince fought bravely through Interface Forest and emerged victorious. The kingdom cheers your name!",
+  "Another dungeon cleared. Your knowledge grows sharper than the Excalibur of Exceptions!",
+  "The villagers of SOLID Village throw flowers at your feet. Well earned, hero.",
+  "You defeated the dreaded Deadlock Dragon. Rest now, champion.",
+  "The wise wizard nods approvingly. Your understanding of the ancient arts deepens.",
+  "A new torch lights up on the castle wall. One step closer to the throne.",
+  "The royal scribes will write ballads of this level's conquest.",
+  "You've unlocked a hidden passage in the Tower of Threads. Onward!",
+  "The kingdom's morale rises. Your dedication does not go unnoticed.",
+  "Another chest of wisdom claimed. The final boss trembles a little more."
+];
+
+const TREATS = [
+  "Make yourself a proper cup of tea or coffee and actually sit and enjoy it.",
+  "Take a 15-minute walk outside, no phone.",
+  "Watch one episode of something you love, guilt-free.",
+  "Order your favorite snack or dessert.",
+  "Put on your favorite song and just dance it out for 3 minutes.",
+  "Take a proper break — stretch, breathe, look away from the screen for 10 minutes.",
+  "Text a friend and share this win with them.",
+  "Buy yourself something small you've been eyeing.",
+  "Take a warm shower and let your shoulders drop.",
+  "Write down three things you're proud of today.",
+  "Nap for 20 minutes, no guilt.",
+  "Cook or order your favorite comfort meal tonight."
+];
+
+const STORAGE_KEY_STATE = 'quest-tracker-state';
+const STORAGE_KEY_LINKS = 'quest-tracker-topic-links';
+const STORAGE_KEY_GENLINKS = 'quest-tracker-gen-links';
+const STORAGE_KEY_CLEARED_LEVELS = 'quest-tracker-cleared-levels';
+
+let state = {};
+let topicLinks = {};
+let genLinks = [];
+let clearedLevels = {};
+
+function slug(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._tm);
+  toast._tm = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+async function loadAll(){
+  try{ const v = localStorage.getItem(STORAGE_KEY_STATE); if(v) state = JSON.parse(v); }catch(e){ state = {}; }
+  try{
+    const v = localStorage.getItem(STORAGE_KEY_LINKS);
+    if(v) topicLinks = JSON.parse(v);
+    Object.keys(topicLinks).forEach(k=>{
+      if(typeof topicLinks[k] === 'string'){
+        topicLinks[k] = topicLinks[k].split(/[\s,]+/).map(s=>s.trim()).filter(s=>s.length>3);
+      }
+    });
+  }catch(e){ topicLinks = {}; }
+  try{ const v = localStorage.getItem(STORAGE_KEY_GENLINKS); if(v) genLinks = JSON.parse(v); }catch(e){ genLinks = []; }
+  try{ const v = localStorage.getItem(STORAGE_KEY_CLEARED_LEVELS); if(v) clearedLevels = JSON.parse(v); }catch(e){ clearedLevels = {}; }
+}
+async function saveState(){ try{ localStorage.setItem(STORAGE_KEY_STATE, JSON.stringify(state)); }catch(e){} }
+async function saveLinks(){ try{ localStorage.setItem(STORAGE_KEY_LINKS, JSON.stringify(topicLinks)); }catch(e){} }
+async function saveGenLinks(){ try{ localStorage.setItem(STORAGE_KEY_GENLINKS, JSON.stringify(genLinks)); }catch(e){} }
+async function saveClearedLevels(){ try{ localStorage.setItem(STORAGE_KEY_CLEARED_LEVELS, JSON.stringify(clearedLevels)); }catch(e){} }
+
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function showLevelUp(level){
+  document.getElementById('levelUpTitle').textContent = `LEVEL ${level.levelNum} CLEARED — ${level.segName}!`;
+  document.getElementById('levelUpMsg').textContent = pick(APPRECIATIONS);
+  document.getElementById('levelUpTreat').textContent = pick(TREATS);
+  document.getElementById('levelUpOverlay').classList.add('show');
+}
+document.getElementById('levelUpClose').onclick = ()=>{
+  document.getElementById('levelUpOverlay').classList.remove('show');
+};
+
+function checkLevelCompletion(){
+  LEVELS.forEach(level=>{
+    const allDone = level.topics.every(t => state[slug(level.segName+'-'+t)] === 'done');
+    if(allDone && !clearedLevels[level.id]){
+      clearedLevels[level.id] = true;
+      saveClearedLevels();
+      showLevelUp(level);
+    } else if(!allDone && clearedLevels[level.id]){
+      delete clearedLevels[level.id];
+      saveClearedLevels();
+    }
+  });
+}
+
+function renderWorldPath(){
+  const path = document.getElementById('worldPath');
+  path.innerHTML = '';
+  let currentFound = false;
+  LEVELS.forEach((level, idx)=>{
+    const doneCount = level.topics.filter(t => state[slug(level.segName+'-'+t)] === 'done').length;
+    const isComplete = doneCount === level.topics.length;
+    const prevComplete = idx===0 || LEVELS[idx-1].topics.every(t => state[slug(LEVELS[idx-1].segName+'-'+t)] === 'done');
+    const isLocked = !prevComplete && !isComplete;
+    const isCurrent = !isComplete && !isLocked && !currentFound;
+    if(isCurrent) currentFound = true;
+
+    const node = document.createElement('div');
+    node.className='level-node';
+    const icon = document.createElement('div');
+    icon.className='node-icon' + (isComplete?' complete':isCurrent?' current':isLocked?' locked':'');
+    icon.textContent = isComplete ? '👑' : isLocked ? '🔒' : '⚔️';
+    if(isCurrent){
+      const flag = document.createElement('div');
+      flag.className='node-current-flag';
+      flag.textContent='🤴';
+      node.appendChild(flag);
+    }
+    node.appendChild(icon);
+    const label = document.createElement('div');
+    label.className='node-label';
+    label.textContent = `${level.segName.replace('Segment ','S')}·L${level.levelNum} (${doneCount}/${level.topics.length})`;
+    node.appendChild(label);
+    node.onclick = ()=>{
+      document.getElementById('searchBox').value='';
+      currentFilter='all'; render('all','');
+      const target = document.querySelector(`[data-level="${level.id}"]`);
+      if(target) target.scrollIntoView({behavior:'smooth', block:'start'});
+    };
+    path.appendChild(node);
+  });
+}
+
+function render(filter='all', query=''){
+  const container = document.getElementById('segmentsContainer');
+  container.innerHTML = '';
+  let total=0, done=0, progress=0, todo=0;
+
+  LEVELS.forEach(level=>{
+    const filtered = level.topics.filter(t => t.toLowerCase().includes(query.toLowerCase()));
+    total += level.topics.length;
+
+    const segDiv = document.createElement('div');
+    segDiv.setAttribute('data-level', level.id);
+    const title = document.createElement('div');
+    title.className='segment-title';
+    title.textContent = `${level.segName} — Level ${level.levelNum}`;
+    segDiv.appendChild(title);
+
+    const grid = document.createElement('div');
+    grid.className='grid';
+
+    filtered.forEach(topic=>{
+      const id = slug(level.segName+'-'+topic);
+      const st = state[id] || 'todo';
+      if(st==='done') done++; else if(st==='progress') progress++; else todo++;
+      if(filter!=='all' && st!==filter) return;
+
+      const card = document.createElement('div');
+      card.className='card' + (st==='done'?' done':'') + (st==='progress'?' progress':'');
+
+      const top = document.createElement('div');
+      top.className='card-top';
+
+      const cb = document.createElement('div');
+      cb.className='checkbox' + (st==='done'?' checked':'');
+      cb.onclick = async ()=>{
+        state[id] = st==='done' ? 'todo' : 'done';
+        await saveState();
+        checkLevelCompletion();
+        render(filter, query);
+        renderWorldPath();
+      };
+
+      const name = document.createElement('div');
+      name.className='topic-name' + (st==='done'?' done':'');
+      name.textContent = topic;
+
+      top.appendChild(cb); top.appendChild(name);
+      card.appendChild(top);
+
+      const sel = document.createElement('select');
+      sel.className='status-select';
+      sel.innerHTML = `<option value="todo">Locked</option><option value="progress">In battle</option><option value="done">Cleared</option>`;
+      sel.value = st;
+      sel.onchange = async ()=>{
+        state[id] = sel.value;
+        await saveState();
+        checkLevelCompletion();
+        render(filter, query);
+        renderWorldPath();
+      };
+      card.appendChild(sel);
+
+      const toggle = document.createElement('div');
+      toggle.className='links-toggle';
+      toggle.innerHTML = `<span class="arrow">▶</span> Study scrolls`;
+      const box = document.createElement('div');
+      box.className='links-box';
+      const input = document.createElement('input');
+      input.type='text'; input.className='link-input'; input.placeholder='Paste a link and press Enter...';
+      const linkList = document.createElement('div');
+      linkList.className='link-list';
+
+      function renderLinkList(){
+        linkList.innerHTML = '';
+        const links = topicLinks[id] || [];
+        if(links.length===0){
+          const empty = document.createElement('div');
+          empty.className='link-empty'; empty.textContent='No scrolls collected yet';
+          linkList.appendChild(empty); return;
+        }
+        links.forEach((link, i)=>{
+          const item = document.createElement('div');
+          item.className='link-item';
+          const a = document.createElement('a');
+          a.href = link.startsWith('http') ? link : 'https://'+link;
+          a.target='_blank'; a.textContent = link;
+          const rm = document.createElement('button');
+          rm.textContent='✕';
+          rm.onclick = async ()=>{ topicLinks[id].splice(i,1); await saveLinks(); renderLinkList(); };
+          item.appendChild(a); item.appendChild(rm);
+          linkList.appendChild(item);
+        });
+      }
+      input.onkeydown = async (e)=>{
+        if(e.key==='Enter'){
+          e.preventDefault();
+          const val = input.value.trim();
+          if(val.length<4) return;
+          const parts = val.split(/[\s,]+/).map(s=>s.trim()).filter(s=>s.length>3);
+          if(!topicLinks[id]) topicLinks[id]=[];
+          topicLinks[id] = topicLinks[id].concat(parts);
+          input.value='';
+          await saveLinks(); renderLinkList(); toast('Scroll added');
+        }
+      };
+      box.appendChild(input); box.appendChild(linkList);
+      renderLinkList();
+      toggle.onclick = ()=>{ toggle.classList.toggle('open'); box.classList.toggle('open'); };
+      card.appendChild(toggle); card.appendChild(box);
+      grid.appendChild(card);
+    });
+
+    if(grid.children.length>0){ segDiv.appendChild(grid); container.appendChild(segDiv); }
+  });
+
+  document.getElementById('statDone').textContent = done;
+  document.getElementById('statProgress').textContent = progress;
+  document.getElementById('statTodo').textContent = todo;
+  document.getElementById('progressLabel').textContent = `${done} / ${total} quests complete`;
+  const pct = total ? Math.round((done/total)*100) : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('princeMarker').style.left = pct + '%';
+}
+
+function renderGenLinks(){
+  const list = document.getElementById('genLinksList');
+  list.innerHTML = '';
+  genLinks.forEach((link, i)=>{
+    const item = document.createElement('div');
+    item.className='gen-link-item';
+    const a = document.createElement('a');
+    a.href = link.startsWith('http') ? link : 'https://'+link;
+    a.target='_blank'; a.textContent = link;
+    const btn = document.createElement('button');
+    btn.textContent='✕';
+    btn.onclick = async ()=>{ genLinks.splice(i,1); await saveGenLinks(); renderGenLinks(); };
+    item.appendChild(a); item.appendChild(btn);
+    list.appendChild(item);
+  });
+}
+
+document.getElementById('searchBox').addEventListener('input', e=>{ render(currentFilter, e.target.value); });
+
+let currentFilter = 'all';
+document.getElementById('filterAll').onclick = ()=>{ currentFilter='all'; render('all', document.getElementById('searchBox').value); };
+document.getElementById('filterTodo').onclick = ()=>{ currentFilter='todo'; render('todo', document.getElementById('searchBox').value); };
+document.getElementById('filterProgress').onclick = ()=>{ currentFilter='progress'; render('progress', document.getElementById('searchBox').value); };
+document.getElementById('filterDone').onclick = ()=>{ currentFilter='done'; render('done', document.getElementById('searchBox').value); };
+
+document.getElementById('resetBtn').onclick = async ()=>{
+  if(confirm('Reset the entire quest? All progress and scrolls will be lost.')){
+    state = {}; topicLinks = {}; clearedLevels = {};
+    await saveState(); await saveLinks(); await saveClearedLevels();
+    render(currentFilter, document.getElementById('searchBox').value);
+    renderWorldPath();
+    toast('Quest reset. The prince returns to the start.');
+  }
+};
+
+document.getElementById('addGenLinks').onclick = async ()=>{
+  const raw = document.getElementById('genLinksInput').value;
+  const links = raw.split(/[\s,]+/).map(s=>s.trim()).filter(s=>s.length>3);
+  if(links.length===0) return;
+  genLinks = genLinks.concat(links);
+  document.getElementById('genLinksInput').value='';
+  await saveGenLinks(); renderGenLinks();
+  toast(`Added ${links.length} scroll(s)`);
+};
+
+document.getElementById('exportBtn').onclick = ()=>{
+  const backup = { state, topicLinks, genLinks, clearedLevels, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'quest-tracker-save.json'; a.click();
+  URL.revokeObjectURL(url);
+  toast('Save file downloaded');
+};
+
+document.getElementById('importBtn').onclick = ()=>{ document.getElementById('importFile').click(); };
+document.getElementById('importFile').onchange = async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const backup = JSON.parse(text);
+    if(backup.state) state = backup.state;
+    if(backup.topicLinks) topicLinks = backup.topicLinks;
+    if(backup.genLinks) genLinks = backup.genLinks;
+    if(backup.clearedLevels) clearedLevels = backup.clearedLevels;
+    await saveState(); await saveLinks(); await saveGenLinks(); await saveClearedLevels();
+    render(currentFilter, document.getElementById('searchBox').value);
+    renderGenLinks(); renderWorldPath();
+    toast('Save file loaded');
+  }catch(err){ alert('Could not read that save file.'); }
+  e.target.value = '';
+};
+
+(async ()=>{
+  await loadAll();
+  render();
+  renderGenLinks();
+  renderWorldPath();
+})();
+</script>
+</body>
+</html>
