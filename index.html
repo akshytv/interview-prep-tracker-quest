@@ -208,7 +208,7 @@ button.primary{background:var(--brick);}
 <div class="wrap">
   <div class="hud" style="margin-bottom:12px;">
     <div style="flex:1; min-width:220px;">
-      <div class="sub" style="margin-bottom:8px;">☁ Cloud sync</div>
+      <div class="sub" style="margin-bottom:8px;">☁ Cloud sync (link phone + desktop)</div>
       <div class="controls" style="margin:0;">
         <input type="text" id="syncCode" placeholder="Sync code e.g. myquest2026" style="width:160px;">
         <button class="primary" id="syncSetup">Connect</button>
@@ -397,17 +397,17 @@ function applySnapshot(data){
 async function cloudPush(){
   const code = document.getElementById('syncCode').value.trim();
   if(!code){ syncStatus('enter a sync code first'); return; }
-  if(!initFirebase()){ syncStatus('cloud not configured'); return; }
+  if(!initFirebase()){ syncStatus('cloud not configured — add Firebase keys in file'); return; }
   try{
     await fbDb.collection('questSync').doc(code).set(getSnapshot());
     syncStatus('pushed ✓ ' + new Date().toLocaleTimeString());
     toast('Progress pushed to cloud');
-  }catch(e){ syncStatus('push failed'); console.error(e); }
+  }catch(e){ syncStatus('push failed: ' + (e.code || e.message || e)); console.error(e); }
 }
 async function cloudPull(){
   const code = document.getElementById('syncCode').value.trim();
   if(!code){ syncStatus('enter a sync code first'); return; }
-  if(!initFirebase()){ syncStatus('cloud not configured'); return; }
+  if(!initFirebase()){ syncStatus('cloud not configured — add Firebase keys in file'); return; }
   try{
     const doc = await fbDb.collection('questSync').doc(code).get();
     if(doc.exists){
@@ -418,9 +418,9 @@ async function cloudPull(){
       syncStatus('pulled ✓ ' + new Date().toLocaleTimeString());
       toast('Progress pulled from cloud');
     } else {
-      syncStatus('no cloud save for this code yet');
+      syncStatus('no cloud save for this code yet — push first');
     }
-  }catch(e){ syncStatus('pull failed'); console.error(e); }
+  }catch(e){ syncStatus('pull failed: ' + (e.code || e.message || e)); console.error(e); }
 }
 
 document.getElementById('syncSetup').onclick = async ()=>{
